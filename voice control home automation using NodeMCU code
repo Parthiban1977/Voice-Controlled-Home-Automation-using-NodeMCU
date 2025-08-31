@@ -1,0 +1,140 @@
+#include "arduino_secrets.h"
+#include "thingProperties.h"
+
+// Define GPIO for Relays
+#define RelayPin1  5   // D1
+#define RelayPin2  4   // D2
+#define RelayPin3  14  // D5
+#define RelayPin4  12  // D6
+
+// Define GPIO for Switches
+#define SwitchPin1 10  // SD3
+#define SwitchPin2  0  // D3
+#define SwitchPin3 13  // D7
+#define SwitchPin4  3  // RX
+
+#define wifiLed    16  // D0
+
+// Relay toggle states
+int toggleState_1 = 0;
+int toggleState_2 = 0;
+int toggleState_3 = 0;
+int toggleState_4 = 0;
+
+// Function to toggle relays
+void relayOnOff(int relay) {
+  switch (relay) {
+    case 1:
+      toggleState_1 = !toggleState_1;
+      digitalWrite(RelayPin1, toggleState_1 ? LOW : HIGH);
+      Serial.println(toggleState_1 ? "Device1 ON" : "Device1 OFF");
+      break;
+    case 2:
+      toggleState_2 = !toggleState_2;
+      digitalWrite(RelayPin2, toggleState_2 ? LOW : HIGH);
+      Serial.println(toggleState_2 ? "Device2 ON" : "Device2 OFF");
+      break;
+    case 3:
+      toggleState_3 = !toggleState_3;
+      digitalWrite(RelayPin3, toggleState_3 ? LOW : HIGH);
+      Serial.println(toggleState_3 ? "Device3 ON" : "Device3 OFF");
+      break;
+    case 4:
+      toggleState_4 = !toggleState_4;
+      digitalWrite(RelayPin4, toggleState_4 ? LOW : HIGH);
+      Serial.println(toggleState_4 ? "Device4 ON" : "Device4 OFF");
+      break;
+    default:
+      break;
+  }
+  delay(100);
+}
+
+// Manual control using physical switches
+void manual_control() {
+  if (digitalRead(SwitchPin1) == LOW) {
+    delay(200);
+    relayOnOff(1);
+  }
+  if (digitalRead(SwitchPin2) == LOW) {
+    delay(200);
+    relayOnOff(2);
+  }
+  if (digitalRead(SwitchPin3) == LOW) {
+    delay(200);
+    relayOnOff(3);
+  }
+  if (digitalRead(SwitchPin4) == LOW) {
+    delay(200);
+    relayOnOff(4);
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  delay(1500);
+
+  // Initialize Arduino IoT Cloud
+  initProperties();
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
+
+  // Set relay and switch pin modes
+  pinMode(RelayPin1, OUTPUT);
+  pinMode(RelayPin2, OUTPUT);
+  pinMode(RelayPin3, OUTPUT);
+  pinMode(RelayPin4, OUTPUT);
+  
+  pinMode(SwitchPin1, INPUT_PULLUP);
+  pinMode(SwitchPin2, INPUT_PULLUP);
+  pinMode(SwitchPin3, INPUT_PULLUP);
+  pinMode(SwitchPin4, INPUT_PULLUP);
+
+  pinMode(wifiLed, OUTPUT);
+
+  // Turn off all relays at startup
+  digitalWrite(RelayPin1, HIGH);
+  digitalWrite(RelayPin2, HIGH);
+  digitalWrite(RelayPin3, HIGH);
+  digitalWrite(RelayPin4, HIGH);
+
+  digitalWrite(wifiLed, HIGH);  // Turn OFF WiFi LED
+}
+
+void loop() {
+  ArduinoCloud.update();
+  manual_control(); // Check manual switch inputs
+
+  if (WiFi.status() != WL_CONNECTED) {
+    digitalWrite(wifiLed, HIGH);  // Turn OFF WiFi LED
+  } else {
+    digitalWrite(wifiLed, LOW);   // Turn ON WiFi LED
+  }
+}
+
+// Alexa-controlled functions
+void onSwitch1Change() {
+  toggleState_1 = switch1;
+  
+  digitalWrite(RelayPin1, switch1 ? LOW : HIGH);
+  Serial.println(switch1 ? "Device1 ON" : "Device1 OFF");
+}
+
+void onSwitch2Change() {
+  toggleState_2 = switch2;
+  digitalWrite(RelayPin2, switch2 ? LOW : HIGH);
+  Serial.println(switch2 ? "Device2 ON" : "Device2 OFF");
+}
+
+void onSwitch3Change() {
+  toggleState_3 = switch3;
+  digitalWrite(RelayPin3, switch3 ? LOW : HIGH);
+  Serial.println(switch3 ? "Device3 ON" : "Device3 OFF");
+}
+
+void onSwitch4Change() {
+  toggleState_4 = switch4;
+  digitalWrite(RelayPin4, switch4 ? LOW : HIGH);
+  Serial.println(switch4 ? "Device4 ON" : "Device4 OFF");
+}
